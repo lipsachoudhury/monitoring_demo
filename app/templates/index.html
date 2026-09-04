@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="dashboard-body">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-chart-line"></i>
+            <span>System Monitor</span>
+        </div>
+        <div class="navbar-right">
+            <div class="navbar-user">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ session.username }}</span>
+            </div>
+            <a href="{{ url_for('auth.logout') }}" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <div class="page-header">
+            <h1>Monitored Systems</h1>
+            <p>Select a system to view real-time monitoring data</p>
+        </div>
+
+        <div class="tiles-grid">
+            <a href="{{ url_for('dashboard.monitor', host='localhost') }}" class="system-tile mac-tile">
+                <div class="tile-icon">
+                    <i class="fab fa-apple"></i>
+                </div>
+                <div class="tile-content">
+                    <h2>Mac</h2>
+                    <p>This computer</p>
+                    <span class="tile-status online">Live</span>
+                </div>
+                <div class="tile-action">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+
+            <a href="{{ url_for('servers.index', os_type='linux') }}" class="system-tile linux-tile">
+                <div class="tile-icon">
+                    <i class="fab fa-linux"></i>
+                </div>
+                <div class="tile-content">
+                    <h2>Linux</h2>
+                    <p>{{ linux_servers|length }} server(s) connected</p>
+                    <span class="tile-status {{ 'online' if linux_servers else 'idle' }}">
+                        {{ 'Connected' if linux_servers else 'No servers' }}
+                    </span>
+                </div>
+                <div class="tile-action">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+
+            <a href="{{ url_for('servers.index', os_type='windows') }}" class="system-tile windows-tile">
+                <div class="tile-icon">
+                    <i class="fab fa-windows"></i>
+                </div>
+                <div class="tile-content">
+                    <h2>Windows</h2>
+                    <p>{{ windows_servers|length }} server(s) connected</p>
+                    <span class="tile-status {{ 'online' if windows_servers else 'idle' }}">
+                        {{ 'Connected' if windows_servers else 'No servers' }}
+                    </span>
+                </div>
+                <div class="tile-action">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+        </div>
+
+        <div class="panel recent-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-server"></i> All Connected Servers</h2>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Host</th>
+                            <th>OS</th>
+                            <th>Username</th>
+                            <th>Port</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set all = linux_servers + windows_servers %}
+                        {% if all %}
+                            {% for s in all %}
+                            <tr>
+                                <td class="table-primary">{{ s.name }}</td>
+                                <td>{{ s.host }}</td>
+                                <td><span class="status-badge os-linux">{{ s.os_type|upper }}</span></td>
+                                <td>{{ s.username }}</td>
+                                <td>{{ s.port }}</td>
+                                <td>
+                                    <a href="{{ url_for('dashboard.monitor', host=s.host) }}" class="btn-view">
+                                        <i class="fas fa-chart-line"></i> Monitor
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="loading">No external servers configured yet</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
