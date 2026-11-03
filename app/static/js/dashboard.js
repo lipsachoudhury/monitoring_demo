@@ -176,7 +176,9 @@ function escapeHtml(text) {
 async function fetchStats() {
     try {
         const host = window.MONITOR_HOST || 'localhost';
-        const url = host === 'localhost' ? '/api/stats' : `/api/stats/${encodeURIComponent(host)}`;
+        const normalized = host.trim().toLowerCase();
+        const local = normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
+        const url = local ? '/api/stats' : `/api/stats/${encodeURIComponent(host)}`;
         
         const response = await fetch(url, {
             method: 'GET',

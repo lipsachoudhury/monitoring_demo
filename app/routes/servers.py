@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import Blueprint, jsonify, render_template, request, session, redirect, url_for
-from app.services.server_store import store
+from app.services.server_store import is_local_host, store
 from app.services.remote_monitor import RemoteMonitor
 
 servers_bp = Blueprint('servers', __name__)
@@ -41,11 +41,14 @@ def add_server():
     data = request.get_json()
     host = (data.get('host') or '').strip()
     os_type = (data.get('os_type') or 'linux').lower()
-    username = (data.get('username') or '').strip()
-    password = data.get('password') or ''
-    port = int(data.get('port') or 22)
+    local = is_local_host(host)
+    username = '' if local else (data.get('username') or '').strip()
+    password = '' if local else (data.get('password') or '')
+    port = 0 if local else int(data.get('port') or 22)
 
-    if not host or not username:
+    if not host:
+        return jsonify({'error': 'Host is required'}), 400
+    if not local and not username:
         return jsonify({'error': 'Host and username are required'}), 400
     if os_type not in VALID_OS:
         return jsonify({'error': 'Invalid OS type'}), 400
@@ -92,6 +95,8 @@ def delete_server(host):
 @login_required
 def test_connection():
     data = request.get_json()
+    if is_local_host(data.get('host') or ''):
+        return jsonify({'success': True, 'message': 'Local host is read on this machine'})
     monitor = RemoteMonitor(
         host=data.get('host'),
         username=data.get('username'),
@@ -106,6 +111,9 @@ def test_connection():
 @servers_bp.route('/api/servers/<host>/stats')
 @login_required
 def server_stats(host):
+    if is_local_host(host):
+        from app.services import get_monitor
+        return jsonify(get_monitor().get_all_stats())
     server = store.get_server(host, with_credentials=True)
     if not server:
         return jsonify({'error': 'Server not found'}), 404

@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import Blueprint, jsonify, redirect, render_template, session, url_for
 from app.services import get_monitor
-from app.services.server_store import store
+from app.services.server_store import is_local_host, store
 from app.services.remote_monitor import RemoteMonitor
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -30,8 +30,8 @@ def index():
 @dashboard_bp.route('/monitor/<path:host>')
 @login_required
 def monitor(host):
-    if host == 'localhost':
-        return render_template('monitor.html', host='localhost', system_type='mac')
+    if is_local_host(host):
+        return render_template('monitor.html', host=host, system_type='linux')
     server = store.get_server(host)
     if not server:
         return redirect(url_for('dashboard.index'))
@@ -49,7 +49,7 @@ def get_stats():
 @dashboard_bp.route('/api/stats/<path:host>')
 @login_required
 def get_remote_stats(host):
-    if host == 'localhost':
+    if is_local_host(host):
         monitor = get_monitor()
         return jsonify(monitor.get_all_stats())
     server = store.get_server(host, with_credentials=True)

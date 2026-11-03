@@ -108,4 +108,12 @@ class ServerStore:
         return servers
 
 
+LOCAL_HOSTS = frozenset({'localhost', '127.0.0.1', '::1'})
+
+
+def is_local_host(host: str) -> bool:
+    """True when metrics can be read on this machine, with no SSH login."""
+    return (host or '').strip().lower() in LOCAL_HOSTS
+
+
 store = ServerStore()

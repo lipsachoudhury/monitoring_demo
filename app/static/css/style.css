@@ -849,6 +849,20 @@ body {
     margin-bottom: 16px;
 }
 
+.form-row[hidden] {
+    display: none;
+}
+
+.local-hint {
+    margin: 0 0 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.local-hint[hidden] {
+    display: none;
+}
+
 .form-group.compact {
     max-width: 120px;
 }

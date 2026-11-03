@@ -1,5 +1,29 @@
 const OS_TYPE = window.CURRENT_OS || 'linux';
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 let pendingDeleteHost = null;
+
+function isLocalHost(host) {
+    return LOCAL_HOSTS.has((host || '').trim().toLowerCase());
+}
+
+function usesLocalMonitor(name, host) {
+    if (isLocalHost(host)) return true;
+    return isLocalHost(name) && !host.trim();
+}
+
+function syncCredentialFields() {
+    const hostInput = document.getElementById('host');
+    const nameInput = document.getElementById('name');
+    const local = usesLocalMonitor(nameInput.value, hostInput.value);
+    document.getElementById('credentialFields').hidden = local;
+    document.getElementById('localHostHint').hidden = !local;
+    document.getElementById('username').required = !local;
+    document.getElementById('password').required = !local;
+    if (local) {
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+    }
+}
 
 function showMessage(message, type) {
     const el = document.getElementById('formMessage');
@@ -90,12 +114,13 @@ async function testConnection() {
     const button = document.getElementById('testConnectionBtn');
     
     const host = document.getElementById('host').value.trim();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
+    const local = isLocalHost(host);
+    const username = local ? '' : document.getElementById('username').value.trim();
+    const password = local ? '' : document.getElementById('password').value;
     const port = document.getElementById('port').value || 22;
-    
-    if (!host || !username || !password) {
-        showMessage('Please fill in host, username and password first', 'error');
+
+    if (!host || (!local && (!username || !password))) {
+        showMessage(local ? 'Enter localhost to monitor this machine' : 'Please fill in host, username and password first', 'error');
         return;
     }
     
@@ -126,11 +151,15 @@ async function addServer(e) {
     e.preventDefault();
     const form = document.getElementById('addServerForm');
     
-    const host = document.getElementById('host').value.trim();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    const port = document.getElementById('port').value || 22;
     const name = document.getElementById('name').value.trim();
+    let host = document.getElementById('host').value.trim();
+    const local = usesLocalMonitor(name, host);
+    if (local && !isLocalHost(host)) {
+        host = 'localhost';
+    }
+    const username = local ? '' : document.getElementById('username').value.trim();
+    const password = local ? '' : document.getElementById('password').value;
+    const port = local ? 0 : (document.getElementById('port').value || 22);
     
     try {
         const response = await fetch('/api/servers', {
@@ -143,6 +172,7 @@ async function addServer(e) {
             showMessage('Server added successfully!', 'success');
             form.reset();
             document.getElementById('port').value = 22;
+            syncCredentialFields();
             loadServers();
         } else {
             showMessage(data.error || 'Failed to add server', 'error');
@@ -156,6 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServers();
     
     document.getElementById('addServerForm').addEventListener('submit', addServer);
+    document.getElementById('host').addEventListener('input', syncCredentialFields);
+    document.getElementById('name').addEventListener('input', syncCredentialFields);
+    syncCredentialFields();
     document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
     document.getElementById('confirmDeleteBtn').addEventListener('click', deleteServer);
     
