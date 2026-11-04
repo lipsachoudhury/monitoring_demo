@@ -44,12 +44,15 @@ def add_server():
     local = is_local_host(host)
     username = '' if local else (data.get('username') or '').strip()
     password = '' if local else (data.get('password') or '')
+    key_filename = '' if local else (data.get('key_filename') or '').strip()
     port = 0 if local else int(data.get('port') or 22)
 
     if not host:
         return jsonify({'error': 'Host is required'}), 400
     if not local and not username:
         return jsonify({'error': 'Host and username are required'}), 400
+    if not local and not password and not key_filename:
+        return jsonify({'error': 'Password or SSH key is required'}), 400
     if os_type not in VALID_OS:
         return jsonify({'error': 'Invalid OS type'}), 400
 
@@ -59,7 +62,8 @@ def add_server():
         'username': username,
         'password': password,
         'port': port,
-        'name': (data.get('name') or host).strip()
+        'name': (data.get('name') or host).strip(),
+        'key_filename': key_filename
     }
 
     if not store.add_server(server):
@@ -102,7 +106,8 @@ def test_connection():
         username=data.get('username'),
         password=data.get('password') or '',
         port=int(data.get('port') or 22),
-        os_type=data.get('os_type') or 'linux'
+        os_type=data.get('os_type') or 'linux',
+        key_filename=(data.get('key_filename') or '').strip() or None
     )
     ok, message = monitor.test_connection()
     return jsonify({'success': ok, 'message': message})
@@ -123,7 +128,8 @@ def server_stats(host):
             username=server['username'],
             password=server['password'] or '',
             port=int(server['port'] or 22),
-            os_type=server['os_type']
+            os_type=server['os_type'],
+            key_filename=server.get('key_filename')
         )
         stats = monitor.get_all_stats()
         return jsonify(stats)

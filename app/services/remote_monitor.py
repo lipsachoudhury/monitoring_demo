@@ -61,26 +61,31 @@ class RemoteMonitor:
     }
     
     def __init__(self, host, username, password, port=22, os_type='linux',
-                 sudo_password=None):
+                 sudo_password=None, key_filename=None):
         self.host = host
         self.username = username
         self.password = password
         self.port = port
         self.os_type = os_type.lower()
         self.sudo_password = sudo_password or password
+        self.key_filename = key_filename or None
     
     def _connect(self, timeout=10):
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(
-            hostname=self.host,
-            port=self.port,
-            username=self.username,
-            password=self.password,
-            timeout=timeout,
-            allow_agent=False,
-            look_for_keys=False
-        )
+        kwargs = {
+            'hostname': self.host,
+            'port': self.port,
+            'username': self.username,
+            'timeout': timeout,
+            'allow_agent': False,
+            'look_for_keys': False,
+        }
+        if self.key_filename:
+            kwargs['key_filename'] = self.key_filename
+        if self.password:
+            kwargs['password'] = self.password
+        client.connect(**kwargs)
         return client
     
     def _exec(self, client, command, timeout=15):

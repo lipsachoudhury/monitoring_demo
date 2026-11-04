@@ -61,7 +61,8 @@ def get_remote_stats(host):
             username=server['username'],
             password=server['password'] or '',
             port=int(server['port'] or 22),
-            os_type=server['os_type']
+            os_type=server['os_type'],
+            key_filename=server.get('key_filename')
         )
         return jsonify(monitor.get_all_stats())
     except Exception as e:
